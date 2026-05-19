@@ -126,35 +126,59 @@ function logout() {
 
 function cariProduk(e) {
   e.preventDefault();
-  alert("Pencarian belum diimplementasi");
-}
-
-function formatRupiah(angka) {
-  return "Rp " + Number(angka).toLocaleString("id-ID");
-}
-
+  var input = document.getElementById("search-input");
+  if (!input) return;
+  
+  var keyword = input.value.trim();
+  
+  // Redirect ke halaman index (beranda) dengan membawa parameter query 'search'
+  if (keyword) {
+    window.location.href = getRootPrefix() + "index.html?search=" + encodeURIComponent(keyword);
+  } else {
+    window.location.href = getRootPrefix() + "index.html";
+  }
+} 
 async function renderGridProduk() {
   var grid = document.getElementById("grid-produk") || document.getElementById("produk-grid");
   if (!grid) return;
 
   try {
-
     const res = await fetch('/barang');
     const data = await res.json();
     window.produkList = data; // Simpan secara global
 
-    
     var pp = getPagePrefix();
     let displayList = window.produkList;
     const isLelangAktifPage = window.location.pathname.includes('lelang-aktif.html');
     const now = new Date();
 
     if (isLelangAktifPage) {
-       displayList = produkList.filter(p => new Date(p.tanggal_mulai) <= now);
+       displayList = displayList.filter(p => new Date(p.tanggal_mulai) <= now);
     }
 
+    // === TAMBAHKAN LOGIKA PENCARIAN DI SINI ===
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchKeyword = urlParams.get('search');
+    
+    if (searchKeyword) {
+       const keyword = searchKeyword.toLowerCase();
+       displayList = displayList.filter(p => 
+          (p.nama_barang && p.nama_barang.toLowerCase().includes(keyword)) || 
+          (p.deskripsi && p.deskripsi.toLowerCase().includes(keyword)) ||
+          (p.kategori && p.kategori.toLowerCase().includes(keyword))
+       );
+       
+       // Ubah judul section jika sedang berada di halaman pencarian
+       const container = grid.parentElement;
+       let titleEl = container.querySelector('.section-title');
+       if (titleEl) {
+           titleEl.textContent = `Hasil Pencarian: "${searchKeyword}"`;
+       }
+    }
+    // ==========================================
+
     if(displayList.length === 0) {
-       grid.innerHTML = "<p>Tidak ada barang lelang saat ini.</p>";
+       grid.innerHTML = "<p style='padding: 20px 0;'>Tidak ada barang yang ditemukan.</p>";
        return;
     }
 
@@ -192,7 +216,6 @@ async function renderGridProduk() {
     grid.innerHTML = "<p>Gagal memuat barang. Error: " + e.message + "</p>";
   }
 }
-
 async function renderDetailProduk() {
   var detail = document.getElementById("detail-produk");
   if (!detail) return;
