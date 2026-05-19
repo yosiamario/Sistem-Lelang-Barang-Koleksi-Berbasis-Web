@@ -156,9 +156,20 @@ function cariProduk(e) {
 }
 
 // In-page search for kategori & lelang-aktif
-function filterBySearchInPage(keyword) {
+async function filterBySearchInPage(keyword) {
   var grid = document.getElementById("grid-produk") || document.getElementById("produk-grid");
-  if (!grid || !window.produkList) return;
+  if (!grid) return;
+  
+  // Jika produkList belum dimuat, ambil dari API dulu
+  if (!window.produkList || window.produkList.length === 0) {
+    try {
+      const res = await fetch('/barang');
+      window.produkList = await res.json();
+    } catch(e) {
+      grid.innerHTML = "<p style='text-align:center; padding:40px; color:#999;'>Gagal memuat data barang.</p>";
+      return;
+    }
+  }
   
   var pp = getPagePrefix();
   var displayList = window.produkList;
@@ -173,7 +184,11 @@ function filterBySearchInPage(keyword) {
   }
   
   if (displayList.length === 0) {
-    grid.innerHTML = "<p style='text-align:center; padding:40px; color:#999;'>Tidak ada barang yang cocok dengan pencarian \"" + keyword + "\"</p>";
+    grid.innerHTML = '<div style="text-align:center; padding:60px 20px;">' +
+      '<div style="font-size:48px; margin-bottom:16px;">🔍</div>' +
+      '<p style="font-size:16px; color:#666; margin-bottom:8px;">Tidak ada barang yang cocok dengan "' + keyword + '"</p>' +
+      '<p style="font-size:13px; color:#999;">Coba gunakan kata kunci yang berbeda</p>' +
+      '</div>';
     return;
   }
   
