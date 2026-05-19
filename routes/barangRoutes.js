@@ -27,17 +27,32 @@ router.post('/', async (req, res) => {
     }
 });
 
-// LIHAT SEMUA BARANG (Tampilan Publik)
+// LIHAT SEMUA BARANG (Tampilan Publik) - mendukung ?search=keyword
 router.get('/', async (req, res) => {
     try {
-        // Gabungkan dengan harga tertinggi dari lelang
+        const search = req.query.search;
+        let queryStr;
+        let queryParams = [];
 
-        const result = await db.query(`
-            SELECT b.*, 
-                   COALESCE((SELECT MAX(harga_penawaran) FROM tbl_lelang l WHERE l.id_barang = b.id_barang), b.harga_awal) as harga_tertinggi
-            FROM tbl_barang b 
-            WHERE b.status = 'approved'
-        `);
+        if (search) {
+            queryStr = `
+                SELECT b.*, 
+                       COALESCE((SELECT MAX(harga_penawaran) FROM tbl_lelang l WHERE l.id_barang = b.id_barang), b.harga_awal) as harga_tertinggi
+                FROM tbl_barang b 
+                WHERE b.status = 'approved'
+                  AND (b.nama_barang ILIKE $1 OR b.deskripsi ILIKE $1 OR b.kategori ILIKE $1)
+            `;
+            queryParams = ['%' + search + '%'];
+        } else {
+            queryStr = `
+                SELECT b.*, 
+                       COALESCE((SELECT MAX(harga_penawaran) FROM tbl_lelang l WHERE l.id_barang = b.id_barang), b.harga_awal) as harga_tertinggi
+                FROM tbl_barang b 
+                WHERE b.status = 'approved'
+            `;
+        }
+
+        const result = await db.query(queryStr, queryParams);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });

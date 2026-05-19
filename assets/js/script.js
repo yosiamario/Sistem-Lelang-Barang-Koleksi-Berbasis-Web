@@ -57,6 +57,11 @@ function getUser() {
   return user ? JSON.parse(user) : null;
 }
 
+function formatRupiah(angka) {
+  if (angka === null || angka === undefined) return 'Rp 0';
+  return 'Rp ' + Number(angka).toLocaleString('id-ID');
+}
+
 function renderNavbar() {
   var user = getUser();
   var pp = getPagePrefix();
@@ -131,19 +136,77 @@ function cariProduk(e) {
   
   var keyword = input.value.trim();
   
+  // Cek apakah halaman saat ini punya grid produk sendiri (kategori/lelang-aktif)
+  var currentPage = window.location.pathname;
+  var isKategori = currentPage.includes('kategori.html');
+  var isLelangAktif = currentPage.includes('lelang-aktif.html');
+  
+  if (isKategori || isLelangAktif) {
+    // Cari di halaman yang sama (in-page search)
+    filterBySearchInPage(keyword);
+    return;
+  }
+  
   // Redirect ke halaman index (beranda) dengan membawa parameter query 'search'
   if (keyword) {
     window.location.href = getRootPrefix() + "index.html?search=" + encodeURIComponent(keyword);
   } else {
     window.location.href = getRootPrefix() + "index.html";
   }
+}
+
+// In-page search for kategori & lelang-aktif
+function filterBySearchInPage(keyword) {
+  var grid = document.getElementById("grid-produk") || document.getElementById("produk-grid");
+  if (!grid || !window.produkList) return;
+  
+  var pp = getPagePrefix();
+  var displayList = window.produkList;
+  
+  if (keyword) {
+    var kw = keyword.toLowerCase();
+    displayList = displayList.filter(function(p) {
+      return (p.nama_barang && p.nama_barang.toLowerCase().includes(kw)) ||
+             (p.deskripsi && p.deskripsi.toLowerCase().includes(kw)) ||
+             (p.kategori && p.kategori.toLowerCase().includes(kw));
+    });
+  }
+  
+  if (displayList.length === 0) {
+    grid.innerHTML = "<p style='text-align:center; padding:40px; color:#999;'>Tidak ada barang yang cocok dengan pencarian \"" + keyword + "\"</p>";
+    return;
+  }
+  
+  var html = "";
+  for (var i = 0; i < displayList.length; i++) {
+    var p = displayList[i];
+    html +=
+      '<a href="' + pp + 'produk.html?id=' + p.id_barang + '" style="text-decoration:none; color:inherit;">' +
+      '<div class="card" style="cursor:pointer;">' +
+      '<img src="' + p.gambar + '" alt="' + p.nama_barang + '" style="width:100%; height:160px; object-fit:cover;">' +
+      '<div class="body">' +
+      '<div class="title">' + p.nama_barang + '</div>' +
+      '<div class="price">' + formatRupiah(p.harga_tertinggi || p.harga_awal) + '</div>' +
+      '</div></div></a>';
+  }
+  grid.innerHTML = html;
 } 
 async function renderGridProduk() {
   var grid = document.getElementById("grid-produk") || document.getElementById("produk-grid");
   if (!grid) return;
 
   try {
-    const res = await fetch('/barang');
+    // === Ambil keyword pencarian dari URL ===
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchKeyword = urlParams.get('search');
+    
+    // Fetch barang - gunakan parameter search jika ada
+    let fetchUrl = '/barang';
+    if (searchKeyword) {
+      fetchUrl += '?search=' + encodeURIComponent(searchKeyword);
+    }
+    
+    const res = await fetch(fetchUrl);
     const data = await res.json();
     window.produkList = data; // Simpan secara global
 
@@ -156,29 +219,26 @@ async function renderGridProduk() {
        displayList = displayList.filter(p => new Date(p.tanggal_mulai) <= now);
     }
 
-    // === TAMBAHKAN LOGIKA PENCARIAN DI SINI ===
-    const urlParams = new URLSearchParams(window.location.search);
-    const searchKeyword = urlParams.get('search');
-    
+    // Tampilkan header hasil pencarian
     if (searchKeyword) {
-       const keyword = searchKeyword.toLowerCase();
-       displayList = displayList.filter(p => 
-          (p.nama_barang && p.nama_barang.toLowerCase().includes(keyword)) || 
-          (p.deskripsi && p.deskripsi.toLowerCase().includes(keyword)) ||
-          (p.kategori && p.kategori.toLowerCase().includes(keyword))
-       );
-       
-       // Ubah judul section jika sedang berada di halaman pencarian
        const container = grid.parentElement;
        let titleEl = container.querySelector('.section-title');
        if (titleEl) {
-           titleEl.textContent = `Hasil Pencarian: "${searchKeyword}"`;
+           titleEl.innerHTML = 'Hasil Pencarian: "' + searchKeyword + '" <a href="' + getRootPrefix() + 'index.html" style="font-size:13px; margin-left:12px; color:#b8860b; text-decoration:underline;">Hapus Filter</a>';
        }
+       
+       // Sembunyikan banner saat pencarian
+       var banner = container.querySelector('.banner');
+       if (banner) banner.style.display = 'none';
     }
-    // ==========================================
 
     if(displayList.length === 0) {
-       grid.innerHTML = "<p style='padding: 20px 0;'>Tidak ada barang yang ditemukan.</p>";
+       grid.innerHTML = '<div style="text-align:center; padding:60px 20px;">' +
+         '<div style="font-size:48px; margin-bottom:16px;">🔍</div>' +
+         '<p style="font-size:16px; color:#666; margin-bottom:8px;">Tidak ada barang yang ditemukan' + (searchKeyword ? ' untuk "<strong>' + searchKeyword + '</strong>"' : '') + '</p>' +
+         '<p style="font-size:13px; color:#999;">Coba gunakan kata kunci yang berbeda</p>' +
+         (searchKeyword ? '<a href="' + getRootPrefix() + 'index.html" class="btn" style="display:inline-block; margin-top:16px;">Lihat Semua Barang</a>' : '') +
+         '</div>';
        return;
     }
 
@@ -512,6 +572,7 @@ async function renderRiwayatBid(id_barang) {
      html += '</ul>';
      historyEl.innerHTML = html;
   } catch(e) {}
+}
 
 // === CHECKOUT STATE ===
 var checkoutStep = 1;
@@ -853,4 +914,12 @@ document.addEventListener("DOMContentLoaded", function () {
   renderPembayaran();
   renderBarangSaya();
   renderProsesPembayaran();
+
+  // Isi search input dengan keyword dari URL jika ada
+  var urlParams = new URLSearchParams(window.location.search);
+  var searchKeyword = urlParams.get('search');
+  if (searchKeyword) {
+    var searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.value = searchKeyword;
+  }
 });
