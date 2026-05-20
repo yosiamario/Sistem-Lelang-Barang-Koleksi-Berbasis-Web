@@ -123,4 +123,21 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// DELETE BARANG
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id_user } = req.body;
+        
+        const check = await db.query("SELECT * FROM tbl_barang WHERE id_barang = $1", [req.params.id]);
+        if (check.rows.length === 0) return res.status(404).json({ error: "Barang tidak ditemukan" });
+        if (check.rows[0].id_user != id_user) return res.status(403).json({ error: "Tidak memiliki akses" });
+
+        await db.query("DELETE FROM tbl_lelang WHERE id_barang = $1", [req.params.id]);
+        await db.query("DELETE FROM tbl_barang WHERE id_barang = $1", [req.params.id]);
+        res.json({ message: "Barang berhasil dihapus" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

@@ -75,6 +75,7 @@ function renderNavbar() {
       extraMenu += `<a href="${pp}admin.html">Dashboard Admin</a>`;
       extraMenu += `<a href="${pp}jual.html" class="btn">Jual Barang</a>`;
     } else if (user.role === 'pelelang') {
+      extraMenu += `<a href="${pp}kelola-barang.html">Kelola Barang</a>`;
       extraMenu += `<a href="${pp}jual.html" class="btn">Jual Barang</a>`;
     }
 

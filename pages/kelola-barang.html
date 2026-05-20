@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Barang - KOLEKU</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <style>
+    .kelola-banner {
+      background: linear-gradient(135deg, #b8860b 0%, #d4a017 100%);
+      padding: 30px 24px;
+      margin-bottom: 24px;
+      border-radius: 0;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .btn-tambah {
+      background: white;
+      color: #b8860b;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 15px;
+      border: 2px solid white;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-tambah:hover {
+      background: #fffaf0;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+
+    .kelola-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+      padding: 0 24px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .kelola-card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e8e0d4;
+      overflow: hidden;
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kelola-card:hover {
+      box-shadow: 0 6px 20px rgba(184,134,11,0.15);
+      transform: translateY(-3px);
+    }
+
+    .kelola-card-img {
+      width: 100%;
+      height: 160px;
+      object-fit: contain;
+      background: #fafafa;
+      padding: 12px;
+    }
+
+    .kelola-card-body {
+      padding: 12px 14px 8px;
+      flex: 1;
+    }
+
+    .kelola-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #3f2e1e;
+      margin-bottom: 6px;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .kelola-card-price {
+      font-size: 14px;
+      font-weight: bold;
+      color: #b8860b;
+    }
+
+    .kelola-card-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 12px;
+      border-top: 1px solid #f0ebe3;
+    }
+
+    .kelola-btn-icon {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: background 0.2s ease;
+      font-size: 16px;
+      color: #888;
+    }
+
+    .kelola-btn-icon:hover {
+      background: #f8f1e3;
+      color: #b8860b;
+    }
+
+    .kelola-btn-icon.delete:hover {
+      background: #fde8e8;
+      color: #c0392b;
+    }
+
+    .kelola-empty {
+      text-align: center;
+      padding: 60px 24px;
+      color: #999;
+      font-size: 16px;
+    }
+
+    .kelola-empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    /* Delete confirmation modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .modal-box h3 {
+      color: #c0392b;
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+
+    .modal-box p {
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .modal-actions button {
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cancel {
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .btn-cancel:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-delete {
+      background: #c0392b;
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background: #a93226;
+    }
+
+    @media (max-width: 600px) {
+      .kelola-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 0 12px 24px;
+      }
+      .kelola-card-img {
+        height: 120px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="navbar"></div>
+
+  <div class="kelola-banner">
+    <a href="jual.html" class="btn-tambah">Tambah Barang +</a>
+  </div>
+
+  <div id="kelola-content">
+    <div class="kelola-empty">
+      <div class="kelola-empty-icon">📦</div>
+      <p>Memuat data barang...</p>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+      <h3>Hapus Barang?</h3>
+      <p id="deleteModalText">Barang ini akan dihapus permanen dari daftar lelang Anda.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeDeleteModal()">Batal</button>
+        <button class="btn-delete" id="confirmDeleteBtn" onclick="confirmDelete()">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="../assets/js/script.js?v=6"></script>
+  <script>
+    var deleteTargetId = null;
+
+    async function loadBarangSaya() {
+      var content = document.getElementById("kelola-content");
+      var user = getUser();
+
+      if (!user) {
+        content.innerHTML = '<div class="kelola-empty"><div class="kelola-empty-icon">🔒</div><p>Silakan login terlebih dahulu.</p><a href="login.html" class="btn" style="margin-top:12px;display:inline-block;">Login</a></div>';
+        return;
+      }
+
+      try {
+        const res = await fetch('/barang/user/' + user.id_user);
+        const barangList = await res.json();
+
+        if (!barangList || barangList.length === 0) {
+          content.innerHTML = '<div class="kelola-empty"><div class="kelola-empty-icon">📦</div><p>Anda belum memiliki barang lelang.</p><a href="jual.html" class="btn" style="margin-top:12px;display:inline-block;">Jual Barang Pertama</a></div>';
+          return;
+        }
+
+        var html = '<div class="kelola-grid">';
+        for (var i = 0; i < barangList.length; i++) {
+          var p = barangList[i];
+          var imgSrc = p.gambar || '../assets/images/placeholder.png';
+          html +=
+            '<div class="kelola-card" id="card-' + p.id_barang + '">' +
+            '<img class="kelola-card-img" src="' + imgSrc + '" alt="' + p.nama_barang + '">' +
+            '<div class="kelola-card-body">' +
+            '<div class="kelola-card-title">' + p.nama_barang + '</div>' +
+            '<div class="kelola-card-price">Rp ' + Number(p.harga_awal).toLocaleString('id-ID') + '</div>' +
+            '</div>' +
+            '<div class="kelola-card-footer">' +
+            '<a href="jual.html?edit_id=' + p.id_barang + '" class="kelola-btn-icon" title="Edit Barang">✏️</a>' +
+            '<button class="kelola-btn-icon delete" title="Hapus Barang" onclick="openDeleteModal(' + p.id_barang + ', \'' + p.nama_barang.replace(/'/g, "\\'") + '\')">🗑️</button>' +
+            '</div>' +
+            '</div>';
+        }
+        html += '</div>';
+        content.innerHTML = html;
+
+      } catch (e) {
+        content.innerHTML = '<div class="kelola-empty"><div class="kelola-empty-icon">⚠️</div><p>Gagal memuat data barang.</p></div>';
+      }
+    }
+
+    function openDeleteModal(id, nama) {
+      deleteTargetId = id;
+      document.getElementById('deleteModalText').textContent = 'Barang "' + nama + '" akan dihapus permanen dari daftar lelang Anda.';
+      document.getElementById('deleteModal').classList.add('active');
+    }
+
+    function closeDeleteModal() {
+      deleteTargetId = null;
+      document.getElementById('deleteModal').classList.remove('active');
+    }
+
+    async function confirmDelete() {
+      if (!deleteTargetId) return;
+      var user = getUser();
+      if (!user) return;
+
+      try {
+        const res = await fetch('/barang/' + deleteTargetId, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: user.id_user })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(function() { return {}; });
+          alert(err.error || 'Gagal menghapus barang');
+          closeDeleteModal();
+          return;
+        }
+
+        var card = document.getElementById('card-' + deleteTargetId);
+        if (card) {
+          card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.9)';
+          setTimeout(function() {
+            card.remove();
+            var grid = document.querySelector('.kelola-grid');
+            if (grid && grid.children.length === 0) {
+              document.getElementById('kelola-content').innerHTML = '<div class="kelola-empty"><div class="kelola-empty-icon">📦</div><p>Anda belum memiliki barang lelang.</p><a href="jual.html" class="btn" style="margin-top:12px;display:inline-block;">Jual Barang Pertama</a></div>';
+            }
+          }, 300);
+        }
+
+        closeDeleteModal();
+      } catch (e) {
+        alert('Terjadi kesalahan saat menghapus barang.');
+        closeDeleteModal();
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      setTimeout(loadBarangSaya, 300);
+    });
+  </script>
+</body>
+
+</html>
