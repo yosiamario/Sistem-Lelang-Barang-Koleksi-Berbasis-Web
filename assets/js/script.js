@@ -842,33 +842,63 @@ async function renderBarangSaya() {
   }
 
   try {
+    if (user.role && user.role.toLowerCase() === 'pelelang') {
+      const res = await fetch('/barang/user/' + user.id_user);
+      const barangList = await res.json();
+      
+      if (barangList.length === 0) {
+        box.innerHTML = '<p>Anda belum memiliki barang lelang.</p>';
+        return;
+      }
+      
+      var html = '<div class="order-list">';
+      for (var i = 0; i < barangList.length; i++) {
+        var p = barangList[i];
+        html +=
+          '<div class="order-card">' +
+          '<div class="order-header"><span>#' + p.id_barang + '</span><span>' + p.status_lelang + '</span></div>' +
+          '<div class="order-body" style="display:flex; gap:14px; align-items:center;">' +
+          '<img src="' + p.gambar + '" style="width:70px; height:70px; object-fit:cover; border-radius:8px;">' +
+          '<div class="order-details" style="flex:1;">' +
+          '<div style="font-weight:bold; font-size:16px;">' + p.nama_barang + '</div>' +
+          '<div style="color:#666; font-size:13px; margin-top:4px;">Kategori: ' + p.kategori + '</div>' +
+          '</div>' +
+          '<div class="order-price" style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">' +
+          '<div style="font-weight:bold; color:#b8860b;">' + formatRupiah(p.harga_awal) + '</div>' +
+          '<a href="' + getRootPrefix() + 'pages/jual.html?edit_id=' + p.id_barang + '" class="btn" style="padding: 6px 12px; font-size: 12px; background:white; color:#b8860b; border: 1px solid #b8860b;">Edit Barang</a>' +
+          '</div></div></div>';
+      }
+      html += '</div>';
+      box.innerHTML = html;
+    } else {
+      const res = await fetch('/pembayaran/user/' + user.id_user);
+      const pembelian = await res.json();
+      
+      if (pembelian.length === 0) {
+        box.innerHTML = '<p>Belum ada barang yang dibeli.</p>';
+        return;
+      }
 
-     const res = await fetch('/pembayaran/user/' + user.id_user);
-
-     const pembelian = await res.json();
-     
-     if (pembelian.length === 0) {
-       box.innerHTML = '<p>Belum ada barang yang dibeli.</p>';
-       return;
-     }
-
-     var html = '<div class="order-list">';
-     for (var i = 0; i < pembelian.length; i++) {
-       var p = pembelian[i];
-       html +=
-         '<div class="order-card">' +
-         '<div class="order-header"><span>#' + p.id_pembayaran + '</span><span>' + p.status + '</span></div>' +
-         '<div class="order-body"><div class="order-details"><div>' + (p.nama_barang || 'Barang') + '</div></div>' +
-         '<div class="order-price" style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">' +
-         '<div>' + formatRupiah(p.total) + '</div>';
-         if (user.role && user.role.toLowerCase() === 'penawar' && p.status && p.status.trim().toLowerCase() === 'lunas') {
-             html += '<a href="' + getRootPrefix() + 'pages/jual.html?resell_id=' + p.id_barang + '" class="btn" style="padding: 6px 12px; font-size: 12px;">Jual Kembali</a>';
-         }
-         html += '</div></div></div>';
-     }
-     html += '</div>';
-     box.innerHTML = html;
-  } catch(e) {}
+      var html = '<div class="order-list">';
+      for (var i = 0; i < pembelian.length; i++) {
+        var p = pembelian[i];
+        html +=
+          '<div class="order-card">' +
+          '<div class="order-header"><span>#' + p.id_pembayaran + '</span><span>' + p.status + '</span></div>' +
+          '<div class="order-body"><div class="order-details"><div>' + (p.nama_barang || 'Barang') + '</div></div>' +
+          '<div class="order-price" style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">' +
+          '<div>' + formatRupiah(p.total) + '</div>';
+          if (p.status && p.status.trim().toLowerCase() === 'lunas') {
+              html += '<a href="' + getRootPrefix() + 'pages/jual.html?resell_id=' + p.id_barang + '" class="btn" style="padding: 6px 12px; font-size: 12px;">Jual Kembali</a>';
+          }
+          html += '</div></div></div>';
+      }
+      html += '</div>';
+      box.innerHTML = html;
+    }
+  } catch(e) {
+    box.innerHTML = '<p>Gagal memuat data.</p>';
+  }
 }
 
 // Login & Daftar (Backend)

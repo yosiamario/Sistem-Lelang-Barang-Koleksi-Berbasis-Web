@@ -251,9 +251,15 @@
         return;
       }
 
+      var params = new URLSearchParams(window.location.search);
+      var editId = params.get("edit_id");
+
       try {
-        const res = await fetch('/barang', {
-           method: 'POST',
+        const url = editId ? '/barang/' + editId : '/barang';
+        const method = editId ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+           method: method,
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({
               nama_barang: nama,
@@ -278,6 +284,11 @@
         document.querySelector('form').style.display = 'none';
         var sukses = document.getElementById('jual-sukses');
         sukses.style.display = 'block';
+        
+        if (editId) {
+            sukses.querySelector('h2').textContent = "Barang Berhasil Diperbarui!";
+            sukses.querySelector('p').textContent = "Perubahan pada barang Anda telah disimpan.";
+        }
 
         document.getElementById('jual-detail').innerHTML =
           '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>Nama Barang:</span><b>' + nama + '</b></div>' +
@@ -293,6 +304,7 @@
     document.addEventListener("DOMContentLoaded", async function() {
       var user = getUser();
       var params = new URLSearchParams(window.location.search);
+      var editId = params.get("edit_id");
       var resellId = params.get("resell_id");
       
       if (user && user.role === 'penawar') {
@@ -303,7 +315,43 @@
           }
       }
       
-      if (resellId) {
+      if (editId && user && user.role === 'pelelang') {
+          try {
+             const res = await fetch('/barang/' + editId);
+             const barang = await res.json();
+             
+             if (barang.id_user !== user.id_user) {
+                 alert("Anda tidak memiliki akses untuk mengedit barang ini.");
+                 window.location.href = "barang-saya.html";
+                 return;
+             }
+             
+             document.getElementById('namaBarang').value = barang.nama_barang;
+             document.getElementById('hargaAwal').value = barang.harga_awal;
+             document.getElementById('deskripsi').value = barang.deskripsi;
+             if (barang.harga_beli_langsung) document.getElementById('hargaBeliLangsung').value = barang.harga_beli_langsung;
+             document.getElementById('kategori').value = barang.kategori || '';
+             updateHargaPreview();
+             
+             if (barang.gambar) {
+                 uploadedImageData = barang.gambar;
+                 const previewContainer = document.getElementById('previewContainer');
+                 previewContainer.innerHTML = '<div style="position:relative;display:inline-block;">' +
+                   '<img src="' + barang.gambar + '" style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:2px solid #b8860b;">' +
+                   '<button type="button" onclick="this.parentElement.remove(); uploadedImageData=null;" style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;border:none;background:#c0392b;color:white;font-size:12px;cursor:pointer;">✕</button>' +
+                   '</div>';
+             }
+             
+             document.querySelector('h1').textContent = "Edit Barang";
+             document.querySelector('p').textContent = "Perbarui informasi barang yang Anda lelang";
+             document.querySelector('button[type="submit"]').textContent = "Simpan Perubahan";
+             
+             var durasiSelect = document.getElementById('durasiLelang');
+             if (durasiSelect) durasiSelect.disabled = true; // Durasi tidak bisa diedit
+          } catch(e) {}
+      }
+      
+      if (resellId && user && user.role === 'penawar') {
           try {
              const resPembelian = await fetch('/pembayaran/user/' + user.id_user);
              const pembelian = await resPembelian.json();
