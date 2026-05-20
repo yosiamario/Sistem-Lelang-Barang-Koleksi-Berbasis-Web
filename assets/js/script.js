@@ -300,7 +300,7 @@ async function renderDetailProduk() {
   if(!id) return;
 
   try {
-    const res = await fetch('http://localhost:3000/barang/' + id);
+    const res = await fetch('/barang/' + id);
     if(!res.ok) {
        detail.innerHTML = "<p>Produk tidak ditemukan.</p>";
        return;
@@ -604,7 +604,7 @@ async function renderCheckout() {
   if(!id) return;
   
   try {
-    const res = await fetch('http://localhost:3000/barang/' + id);
+    const res = await fetch('/barang/' + id);
     if(!res.ok) return;
     const produk = await res.json();
 
@@ -733,7 +733,7 @@ async function bayar() {
   var id = params.get("id");
   var isBuyNow = params.get("type") === "buynow";
 
-  const resBarang = await fetch('http://localhost:3000/barang/' + id);
+  const resBarang = await fetch('/barang/' + id);
   const produk = await resBarang.json();
   
   var basePrice = Number(produk.harga_tertinggi || produk.harga_awal);
@@ -751,7 +751,7 @@ async function bayar() {
   if (selectedPaymentMethod === 'bank') vaNumber = '8800' + Math.floor(10000000 + Math.random() * 90000000);
 
   try {
-     const res = await fetch('http://localhost:3000/pembayaran/create', {
+     const res = await fetch('/pembayaran/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -786,7 +786,7 @@ async function renderProsesPembayaran() {
   if(!trx) return;
 
   try {
-     const res = await fetch('http://localhost:3000/pembayaran/' + trx);
+     const res = await fetch('/pembayaran/' + trx);
      if(!res.ok) { box.innerHTML = "<p>Transaksi tidak ditemukan</p>"; return; }
      const data = await res.json();
 
@@ -806,7 +806,7 @@ async function renderProsesPembayaran() {
 
 async function konfirmasiPembayaran(trx) {
   try {
-     await fetch('http://localhost:3000/pembayaran/confirm/' + trx, { method: 'PUT' });
+     await fetch('/pembayaran/confirm/' + trx, { method: 'PUT' });
      window.location.href = "pembayaran.html?trx=" + trx;
   } catch(e) {}
 }
@@ -820,7 +820,7 @@ async function renderPembayaran() {
   if(!trx) return;
 
   try {
-     const res = await fetch('http://localhost:3000/pembayaran/' + trx);
+     const res = await fetch('/pembayaran/' + trx);
      const data = await res.json();
      box.innerHTML =
        '<div class="receipt-card">' +
@@ -879,7 +879,7 @@ async function handleLogin(e) {
   var errorEl = document.getElementById("error");
 
   try {
-     const res = await fetch('http://localhost:3000/auth/login', {
+     const res = await fetch('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -904,7 +904,7 @@ async function handleDaftar(e) {
   var errorEl = document.getElementById("error");
 
   try {
-     const res = await fetch('http://localhost:3000/auth/signup', {
+     const res = await fetch('/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nama: namaDepan + ' ' + namaBelakang, email, password, role: role })
