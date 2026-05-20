@@ -81,6 +81,12 @@
       </div>
 
       <div class="form-group">
+        <label>Tanggal Mulai Lelang (Opsional)</label>
+        <input type="datetime-local" id="jadwalMulai">
+        <div style="margin-top:4px;font-size:11px;color:#999;">Biarkan kosong jika ingin lelang dimulai sekarang.</div>
+      </div>
+
+      <div class="form-group">
         <label>Durasi Lelang</label>
         <select id="durasiLelang" required>
           <option value="">Pilih Durasi</option>
@@ -348,6 +354,16 @@
              
              var durasiSelect = document.getElementById('durasiLelang');
              if (durasiSelect) durasiSelect.disabled = true; // Durasi tidak bisa diedit
+             
+             var jadwalMulaiInput = document.getElementById('jadwalMulai');
+             if (jadwalMulaiInput) {
+                 if (barang.tanggal_mulai) {
+                     var d = new Date(barang.tanggal_mulai);
+                     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                     jadwalMulaiInput.value = d.toISOString().slice(0, 16);
+                 }
+                 jadwalMulaiInput.disabled = true; // Tanggal mulai tidak bisa diedit
+             }
           } catch(e) {}
       }
       
