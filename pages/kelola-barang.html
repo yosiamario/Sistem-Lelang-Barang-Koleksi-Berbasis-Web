@@ -282,11 +282,18 @@
         for (var i = 0; i < barangList.length; i++) {
           var p = barangList[i];
           var imgSrc = p.gambar || '../assets/images/placeholder.png';
-          var pendingBadge = p.status === 'pending' ? '<div style="position:absolute;top:10px;right:10px;background:#e67e22;color:white;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:bold;">Menunggu Persetujuan</div>' : '';
+          var statusBadge = '';
+          if (p.status === 'pending') {
+            statusBadge = '<div style="position:absolute;top:10px;right:10px;background:#e67e22;color:white;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:bold;z-index:2;">Menunggu Persetujuan</div>';
+          } else if (p.status === 'approved') {
+            statusBadge = '<div style="position:absolute;top:10px;right:10px;background:#27ae60;color:white;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:bold;z-index:2;">Disetujui</div>';
+          } else if (p.status === 'rejected') {
+            statusBadge = '<div style="position:absolute;top:10px;right:10px;background:#c0392b;color:white;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:bold;z-index:2;">Ditolak</div>';
+          }
           
           html +=
             '<div class="kelola-card" id="card-' + p.id_barang + '" style="position:relative;">' +
-            pendingBadge +
+            statusBadge +
             '<img class="kelola-card-img" src="' + imgSrc + '" alt="' + p.nama_barang + '">' +
             '<div class="kelola-card-body">' +
             '<div class="kelola-card-title">' + p.nama_barang + '</div>' +
