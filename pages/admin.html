@@ -20,8 +20,10 @@
   <div id="navbar"></div>
 
   <div class="admin-container">
-    <h1 class="admin-header">Persetujuan Barang Lelang</h1>
-    <div style="background:white; padding:20px; border-radius:8px; border:2px solid #e5d9c8; overflow-x:auto;">
+    <h1 class="admin-header">Dashboard Admin</h1>
+
+    <div style="background:white; padding:20px; border-radius:8px; border:2px solid #e5d9c8; overflow-x:auto; margin-bottom: 40px;">
+      <h2 style="margin-bottom: 15px; color: #333;">Barang Menunggu Persetujuan</h2>
       <table class="tabel-admin">
         <thead>
           <tr>
@@ -33,6 +35,24 @@
           </tr>
         </thead>
         <tbody id="admin-tbody">
+          <tr><td colspan="5" class="empty-state">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="background:white; padding:20px; border-radius:8px; border:2px solid #e5d9c8; overflow-x:auto;">
+      <h2 style="margin-bottom: 15px; color: #333;">Lelang Berjalan</h2>
+      <table class="tabel-admin">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nama Barang</th>
+            <th>Pelelang (User ID)</th>
+            <th>Tanggal Selesai</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="aktif-tbody">
           <tr><td colspan="5" class="empty-state">Memuat data...</td></tr>
         </tbody>
       </table>
@@ -57,28 +77,70 @@
 
         if (list.length === 0) {
           tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Tidak ada barang yang menunggu persetujuan.</td></tr>';
+        } else {
+          let html = '';
+          for (let item of list) {
+            html += `
+              <tr id="row-${item.id_barang}">
+                <td>${item.id_barang}</td>
+                <td>${item.nama_barang}</td>
+                <td>Rp ${Number(item.harga_awal).toLocaleString('id-ID')}</td>
+                <td>${item.id_user}</td>
+                <td>
+                  <button class="btn-approve" onclick="approveItem(${item.id_barang})">Setujui</button>
+                  <button class="btn-reject" onclick="rejectItem(${item.id_barang})">Tolak</button>
+                </td>
+              </tr>
+            `;
+          }
+          tbody.innerHTML = html;
+        }
+        
+        loadAktif(); // Load list lelang aktif
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Gagal memuat data.</td></tr>';
+      }
+    }
+
+    async function loadAktif() {
+      const tbody = document.getElementById("aktif-tbody");
+      try {
+        const res = await fetch('/admin/aktif');
+        const list = await res.json();
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Tidak ada lelang yang sedang berjalan.</td></tr>';
           return;
         }
 
         let html = '';
         for (let item of list) {
           html += `
-            <tr id="row-${item.id_barang}">
+            <tr id="row-aktif-${item.id_barang}">
               <td>${item.id_barang}</td>
               <td>${item.nama_barang}</td>
-              <td>Rp ${Number(item.harga_awal).toLocaleString('id-ID')}</td>
               <td>${item.id_user}</td>
+              <td>${new Date(item.tanggal_selesai).toLocaleString('id-ID')}</td>
               <td>
-                <button class="btn-approve" onclick="approveItem(${item.id_barang})">Setujui</button>
-                <button class="btn-reject" onclick="rejectItem(${item.id_barang})">Tolak</button>
+                <button class="btn-reject" style="background:#e67e22;" onclick="tutupLelang(${item.id_barang})">Tutup Lelang (Force)</button>
               </td>
             </tr>
           `;
         }
         tbody.innerHTML = html;
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Gagal memuat data.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Gagal memuat lelang aktif.</td></tr>';
       }
+    }
+
+    async function tutupLelang(id) {
+      if (!confirm("Tutup lelang ini sekarang? Jika ada yang sudah menawar, penawar tertinggi akan otomatis menang. Jika tidak ada, lelang ditutup tanpa pemenang.")) return;
+      try {
+        const res = await fetch('/admin/tutup-lelang/' + id, { method: 'PUT' });
+        const data = await res.json();
+        alert(data.message);
+        if (res.ok) document.getElementById('row-aktif-' + id).remove();
+      } catch(e) { alert("Terjadi kesalahan."); }
     }
 
     async function approveItem(id) {

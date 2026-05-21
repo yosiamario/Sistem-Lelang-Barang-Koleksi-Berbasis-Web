@@ -84,7 +84,12 @@ router.put('/tutup-lelang/:id_barang', async (req, res) => {
         );
 
         if (topBid.rows.length === 0) {
-            return res.status(404).json({ message: "Belum ada yang menawar barang ini." });
+            // Tutup tanpa pemenang
+            await db.query(
+                "UPDATE tbl_barang SET status_lelang = 'selesai' WHERE id_barang = $1",
+                [id_barang]
+            );
+            return res.json({ message: "Lelang ditutup tanpa pemenang (tidak ada penawar)." });
         }
 
         const pemenangId = topBid.rows[0].id_user;
