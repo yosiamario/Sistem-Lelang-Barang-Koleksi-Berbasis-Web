@@ -12,6 +12,16 @@ router.get('/pending', async (req, res) => {
     }
 });
 
+// LIHAT SEMUA LELANG AKTIF (Hanya Admin)
+router.get('/aktif', async (req, res) => {
+    try {
+        const result = await db.query("SELECT * FROM tbl_barang WHERE status = 'approved' AND status_lelang = 'berjalan' ORDER BY id_barang DESC");
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // APPROVE BARANG
 router.put('/approve/:id', async (req, res) => {
     const { id } = req.params;
