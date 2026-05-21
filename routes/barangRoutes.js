@@ -13,10 +13,10 @@ router.post('/', async (req, res) => {
 
         if (tanggal_mulai) {
             queryInsert = "INSERT INTO tbl_barang (nama_barang, harga_awal, deskripsi, id_user, status, gambar, kategori, harga_beli_langsung, tanggal_mulai, tanggal_selesai, status_lelang) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9::timestamp + INTERVAL '1 hour' * $10, 'berjalan') RETURNING *";
-            queryParams = [nama_barang, harga_awal, deskripsi, id_user, 'approved', gambar || '', kategori || 'Lainnya', harga_beli_langsung || null, tanggal_mulai, durasi];
+            queryParams = [nama_barang, harga_awal, deskripsi, id_user, 'pending', gambar || '', kategori || 'Lainnya', harga_beli_langsung || null, tanggal_mulai, durasi];
         } else {
             queryInsert = "INSERT INTO tbl_barang (nama_barang, harga_awal, deskripsi, id_user, status, gambar, kategori, harga_beli_langsung, tanggal_mulai, tanggal_selesai, status_lelang) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW() + INTERVAL '1 hour' * $9, 'berjalan') RETURNING *";
-            queryParams = [nama_barang, harga_awal, deskripsi, id_user, 'approved', gambar || '', kategori || 'Lainnya', harga_beli_langsung || null, durasi];
+            queryParams = [nama_barang, harga_awal, deskripsi, id_user, 'pending', gambar || '', kategori || 'Lainnya', harga_beli_langsung || null, durasi];
         }
 
         const result = await db.query(queryInsert, queryParams);
@@ -82,7 +82,7 @@ router.get('/user/:id_user', async (req, res) => {
             SELECT b.*, 
                    COALESCE((SELECT MAX(harga_penawaran) FROM tbl_lelang l WHERE l.id_barang = b.id_barang), b.harga_awal) as harga_tertinggi
             FROM tbl_barang b 
-            WHERE b.id_user = $1
+            WHERE b.id_user = $1 AND b.status != 'deleted'
             ORDER BY b.id_barang DESC
         `, [req.params.id_user]);
         res.json(result.rows);
@@ -132,9 +132,55 @@ router.delete('/:id', async (req, res) => {
         if (check.rows.length === 0) return res.status(404).json({ error: "Barang tidak ditemukan" });
         if (check.rows[0].id_user != id_user) return res.status(403).json({ error: "Tidak memiliki akses" });
 
+        // Soft delete: ubah status menjadi 'deleted' alih-alih menghapus data
+        await db.query("UPDATE tbl_barang SET status = 'deleted' WHERE id_barang = $1", [req.params.id]);
+        res.json({ message: "Barang berhasil dihapus (soft delete)" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET RECYCLE BIN BY USER
+router.get('/recycle/:id_user', async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT * FROM tbl_barang 
+            WHERE id_user = $1 AND status = 'deleted'
+            ORDER BY id_barang DESC
+        `, [req.params.id_user]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// RESTORE BARANG DARI RECYCLE BIN
+router.put('/restore/:id', async (req, res) => {
+    try {
+        const { id_user } = req.body;
+        const check = await db.query("SELECT * FROM tbl_barang WHERE id_barang = $1", [req.params.id]);
+        if (check.rows.length === 0) return res.status(404).json({ error: "Barang tidak ditemukan" });
+        if (check.rows[0].id_user != id_user) return res.status(403).json({ error: "Tidak memiliki akses" });
+
+        // Restore barang menjadi 'pending' lagi agar admin mengecek ulang
+        await db.query("UPDATE tbl_barang SET status = 'pending' WHERE id_barang = $1", [req.params.id]);
+        res.json({ message: "Barang berhasil dikembalikan dan menunggu persetujuan admin." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// HARD DELETE (PERMANEN)
+router.delete('/hard/:id', async (req, res) => {
+    try {
+        const { id_user } = req.body;
+        const check = await db.query("SELECT * FROM tbl_barang WHERE id_barang = $1", [req.params.id]);
+        if (check.rows.length === 0) return res.status(404).json({ error: "Barang tidak ditemukan" });
+        if (check.rows[0].id_user != id_user) return res.status(403).json({ error: "Tidak memiliki akses" });
+
         await db.query("DELETE FROM tbl_lelang WHERE id_barang = $1", [req.params.id]);
         await db.query("DELETE FROM tbl_barang WHERE id_barang = $1", [req.params.id]);
-        res.json({ message: "Barang berhasil dihapus" });
+        res.json({ message: "Barang dihapus permanen" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

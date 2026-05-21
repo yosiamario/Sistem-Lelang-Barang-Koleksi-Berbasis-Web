@@ -14,6 +14,7 @@ const barangRoutes = require('./routes/barangRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const lelangRoutes = require('./routes/lelangRoutes');
 const pembayaranRoutes = require('./routes/pembayaranRoutes');
+const notifikasiRoutes = require('./routes/notifikasiRoutes');
 
 // Serve static files (HTML, CSS, JS, images)
 app.use(express.static(path.join(__dirname)));
@@ -24,6 +25,7 @@ router.use('/barang', barangRoutes);
 router.use('/admin', adminRoutes);
 router.use('/lelang', lelangRoutes);
 router.use('/pembayaran', pembayaranRoutes);
+router.use('/notifikasi', notifikasiRoutes);
 
 app.use('/', router);
 

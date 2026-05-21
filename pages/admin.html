@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin - KOLEKU</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <style>
+    .admin-container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+    .admin-header { text-align: center; margin-bottom: 30px; color: #b8860b; }
+    .tabel-admin { width: 100%; border-collapse: collapse; background: white; border: 1px solid #ddd; }
+    .tabel-admin th, .tabel-admin td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+    .tabel-admin th { background: #f4f4f4; color: #333; }
+    .btn-approve { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .btn-reject { background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .empty-state { text-align: center; padding: 40px; color: #999; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <div class="admin-container">
+    <h1 class="admin-header">Persetujuan Barang Lelang</h1>
+    <div style="background:white; padding:20px; border-radius:8px; border:2px solid #e5d9c8; overflow-x:auto;">
+      <table class="tabel-admin">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nama Barang</th>
+            <th>Harga Awal</th>
+            <th>Pelelang (User ID)</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="admin-tbody">
+          <tr><td colspan="5" class="empty-state">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="../assets/js/script.js?v=7"></script>
+  <script>
+    async function loadPending() {
+      const tbody = document.getElementById("admin-tbody");
+      var user = getUser();
+      if (!user || user.role !== 'admin') {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Akses ditolak. Hanya admin.</td></tr>';
+        return;
+      }
+
+      try {
+        const res = await fetch('/admin/pending');
+        const list = await res.json();
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Tidak ada barang yang menunggu persetujuan.</td></tr>';
+          return;
+        }
+
+        let html = '';
+        for (let item of list) {
+          html += `
+            <tr id="row-${item.id_barang}">
+              <td>${item.id_barang}</td>
+              <td>${item.nama_barang}</td>
+              <td>Rp ${Number(item.harga_awal).toLocaleString('id-ID')}</td>
+              <td>${item.id_user}</td>
+              <td>
+                <button class="btn-approve" onclick="approveItem(${item.id_barang})">Setujui</button>
+                <button class="btn-reject" onclick="rejectItem(${item.id_barang})">Tolak</button>
+              </td>
+            </tr>
+          `;
+        }
+        tbody.innerHTML = html;
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Gagal memuat data.</td></tr>';
+      }
+    }
+
+    async function approveItem(id) {
+      if (!confirm("Setujui barang ini untuk tampil di publik?")) return;
+      try {
+        const res = await fetch('/admin/approve/' + id, { method: 'PUT' });
+        if (res.ok) document.getElementById('row-' + id).remove();
+        else alert("Gagal menyetujui barang.");
+      } catch(e) { alert("Terjadi kesalahan."); }
+    }
+
+    async function rejectItem(id) {
+      if (!confirm("Tolak barang ini?")) return;
+      try {
+        const res = await fetch('/admin/reject/' + id, { method: 'PUT' });
+        if (res.ok) document.getElementById('row-' + id).remove();
+        else alert("Gagal menolak barang.");
+      } catch(e) { alert("Terjadi kesalahan."); }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(loadPending, 300);
+    });
+  </script>
+</body>
+</html>

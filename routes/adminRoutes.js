@@ -16,7 +16,14 @@ router.get('/pending', async (req, res) => {
 router.put('/approve/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query("UPDATE tbl_barang SET status = 'approved' WHERE id_barang = $1", [id]);
+        const item = await db.query("UPDATE tbl_barang SET status = 'approved' WHERE id_barang = $1 RETURNING id_user, nama_barang", [id]);
+        if (item.rows.length > 0) {
+            const { id_user, nama_barang } = item.rows[0];
+            await db.query(
+                "INSERT INTO tbl_notifikasi (id_user, pesan) VALUES ($1, $2)",
+                [id_user, `Barang Anda "${nama_barang}" telah disetujui oleh admin.`]
+            );
+        }
         res.json({ message: "Barang telah disetujui untuk dilelang" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -26,7 +33,14 @@ router.put('/approve/:id', async (req, res) => {
 //MENOLAK BARANG
 router.put('/reject/:id', async (req, res) => {
     try {
-        await db.query("UPDATE tbl_barang SET status = 'rejected' WHERE id_barang = $1", [req.params.id]);
+        const item = await db.query("UPDATE tbl_barang SET status = 'rejected' WHERE id_barang = $1 RETURNING id_user, nama_barang", [req.params.id]);
+        if (item.rows.length > 0) {
+            const { id_user, nama_barang } = item.rows[0];
+            await db.query(
+                "INSERT INTO tbl_notifikasi (id_user, pesan) VALUES ($1, $2)",
+                [id_user, `Barang Anda "${nama_barang}" telah ditolak oleh admin.`]
+            );
+        }
         res.json({ message: "Barang ditolak/dibatalkan" });
     } catch (err) {
         res.status(500).json({ error: err.message });

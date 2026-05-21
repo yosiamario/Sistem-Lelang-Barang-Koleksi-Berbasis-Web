@@ -229,7 +229,10 @@
   <div id="navbar"></div>
 
   <div class="kelola-banner">
-    <a href="jual.html" class="btn-tambah">Tambah Barang +</a>
+    <div style="display:flex; gap:10px;">
+      <a href="recycle-bin.html" class="btn-tambah" style="background:#f4f4f4; color:#333; border:2px solid #ddd;">Recycle Bin 🗑️</a>
+      <a href="jual.html" class="btn-tambah">Tambah Barang +</a>
+    </div>
   </div>
 
   <div id="kelola-content">
@@ -279,8 +282,11 @@
         for (var i = 0; i < barangList.length; i++) {
           var p = barangList[i];
           var imgSrc = p.gambar || '../assets/images/placeholder.png';
+          var pendingBadge = p.status === 'pending' ? '<div style="position:absolute;top:10px;right:10px;background:#e67e22;color:white;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:bold;">Menunggu Persetujuan</div>' : '';
+          
           html +=
-            '<div class="kelola-card" id="card-' + p.id_barang + '">' +
+            '<div class="kelola-card" id="card-' + p.id_barang + '" style="position:relative;">' +
+            pendingBadge +
             '<img class="kelola-card-img" src="' + imgSrc + '" alt="' + p.nama_barang + '">' +
             '<div class="kelola-card-body">' +
             '<div class="kelola-card-title">' + p.nama_barang + '</div>' +

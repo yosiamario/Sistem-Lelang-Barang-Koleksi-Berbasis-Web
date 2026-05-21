@@ -80,6 +80,14 @@ function renderNavbar() {
     }
 
     menuKanan = `
+      <div class="notif-container" onclick="toggleNotif(event)">
+        <span class="notif-icon">🔔</span>
+        <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+        <div class="notif-dropdown" id="notif-dropdown">
+          <div class="notif-header">Notifikasi</div>
+          <div id="notif-list"><div style="padding:10px;text-align:center;">Memuat...</div></div>
+        </div>
+      </div>
       <span style="font-weight:bold;color:#3f2e1e">Halo, ${user.nama} (${user.role})</span>
       <a href="${pp}barang-saya.html">Barang Saya</a>
       ${extraMenu}
@@ -111,7 +119,84 @@ function renderNavbar() {
   `;
 
   var nav = document.getElementById("navbar");
-  if (nav) nav.innerHTML = html;
+  if (nav) {
+    nav.innerHTML = html;
+    if (user) {
+      loadNotifUnreadCount(user.id_user);
+    }
+  }
+}
+
+// Fitur Notifikasi
+async function loadNotifUnreadCount(id_user) {
+  try {
+    const res = await fetch('/notifikasi/user/' + id_user + '/unread');
+    if (res.ok) {
+      const data = await res.json();
+      const badge = document.getElementById('notif-badge');
+      if (data.unread > 0) {
+        badge.textContent = data.unread;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  } catch(e) {}
+}
+
+async function toggleNotif(e) {
+  e.stopPropagation();
+  var dropdown = document.getElementById('notif-dropdown');
+  if (dropdown.classList.contains('show')) {
+    dropdown.classList.remove('show');
+  } else {
+    dropdown.classList.add('show');
+    loadNotifList();
+  }
+}
+
+// Tutup notif kalau klik di luar
+document.addEventListener('click', function(e) {
+  var dropdown = document.getElementById('notif-dropdown');
+  if (dropdown && dropdown.classList.contains('show') && !e.target.closest('.notif-container')) {
+    dropdown.classList.remove('show');
+  }
+});
+
+async function loadNotifList() {
+  var user = getUser();
+  if (!user) return;
+  var listDiv = document.getElementById('notif-list');
+  try {
+    const res = await fetch('/notifikasi/user/' + user.id_user);
+    if (!res.ok) throw new Error();
+    const list = await res.json();
+    if (list.length === 0) {
+      listDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#999;">Tidak ada notifikasi</div>';
+      return;
+    }
+    let html = '';
+    list.forEach(n => {
+      let isUnread = n.is_read ? '' : 'unread';
+      html += `<div class="notif-item ${isUnread}" onclick="markNotifRead(${n.id_notifikasi}, event)">
+        ${n.pesan}
+        <div style="font-size:10px;color:#999;margin-top:4px;">${new Date(n.created_at).toLocaleString('id-ID')}</div>
+      </div>`;
+    });
+    listDiv.innerHTML = html;
+  } catch(e) {
+    listDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#999;">Gagal memuat</div>';
+  }
+}
+
+async function markNotifRead(id_notifikasi, event) {
+  event.stopPropagation(); // Jangan tutup dropdown
+  try {
+    await fetch('/notifikasi/' + id_notifikasi + '/read', { method: 'PUT' });
+    var user = getUser();
+    if (user) loadNotifUnreadCount(user.id_user);
+    loadNotifList();
+  } catch(e) {}
 }
 
 function renderFooter() {

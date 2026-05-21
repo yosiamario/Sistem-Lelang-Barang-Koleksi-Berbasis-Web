@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recycle Bin - KOLEKU</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <style>
+    .rb-container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+    .rb-header { text-align: center; margin-bottom: 30px; color: #b8860b; }
+    .tabel-rb { width: 100%; border-collapse: collapse; background: white; border: 1px solid #ddd; }
+    .tabel-rb th, .tabel-rb td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+    .tabel-rb th { background: #f4f4f4; color: #333; }
+    .btn-restore { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right:5px;}
+    .btn-harddel { background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .empty-state { text-align: center; padding: 40px; color: #999; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <div class="rb-container">
+    <h1 class="rb-header">Recycle Bin 🗑️</h1>
+    <div style="margin-bottom: 15px;">
+      <a href="kelola-barang.html" class="btn btn-outline">⬅ Kembali ke Kelola Barang</a>
+    </div>
+    <div style="background:white; padding:20px; border-radius:8px; border:2px solid #e5d9c8; overflow-x:auto;">
+      <table class="tabel-rb">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nama Barang</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="rb-tbody">
+          <tr><td colspan="3" class="empty-state">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="../assets/js/script.js?v=7"></script>
+  <script>
+    async function loadRecycleBin() {
+      const tbody = document.getElementById("rb-tbody");
+      var user = getUser();
+      if (!user) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Silakan login.</td></tr>';
+        return;
+      }
+
+      try {
+        const res = await fetch('/barang/recycle/' + user.id_user);
+        const list = await res.json();
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Recycle Bin kosong.</td></tr>';
+          return;
+        }
+
+        let html = '';
+        for (let item of list) {
+          html += `
+            <tr id="row-${item.id_barang}">
+              <td>${item.id_barang}</td>
+              <td>${item.nama_barang}</td>
+              <td>
+                <button class="btn-restore" onclick="restoreItem(${item.id_barang})">Restore ♻️</button>
+                <button class="btn-harddel" onclick="hardDeleteItem(${item.id_barang})">Hapus Permanen ❌</button>
+              </td>
+            </tr>
+          `;
+        }
+        tbody.innerHTML = html;
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Gagal memuat data.</td></tr>';
+      }
+    }
+
+    async function restoreItem(id) {
+      var user = getUser();
+      if (!confirm("Restore barang ini? Statusnya akan kembali menjadi pending untuk disetujui admin.")) return;
+      try {
+        const res = await fetch('/barang/restore/' + id, { 
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: user.id_user })
+        });
+        if (res.ok) document.getElementById('row-' + id).remove();
+        else alert("Gagal merestore barang.");
+      } catch(e) { alert("Terjadi kesalahan."); }
+    }
+
+    async function hardDeleteItem(id) {
+      var user = getUser();
+      if (!confirm("PERINGATAN: Barang akan dihapus PERMANEN dan tidak bisa dikembalikan. Lanjut?")) return;
+      try {
+        const res = await fetch('/barang/hard/' + id, { 
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_user: user.id_user })
+        });
+        if (res.ok) document.getElementById('row-' + id).remove();
+        else alert("Gagal menghapus permanen.");
+      } catch(e) { alert("Terjadi kesalahan."); }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(loadRecycleBin, 300);
+    });
+  </script>
+</body>
+</html>
